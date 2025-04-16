@@ -134,10 +134,15 @@ void oled_display_thread(void *arg)
         double yaw_rad = degree_to_radian(euler_angles.yaw);
         int x = (int)vector_length*cos(roll_rad)*cos(yaw_rad)+96;
         int y = (int)vector_length*cos(roll_rad)*sin(yaw_rad)+32;
-        printf("Roll: %f Pitch: %f Yaw: %f\n", 
-               euler_angles.roll, euler_angles.pitch, euler_angles.yaw);
-        printf("x: %d y: %d\n", x, y);
         ssd1306_writeLine(&disp, 96, 32, x, y);
+        char str[20];
+        snprintf(str, sizeof(str), "Roll:%d", (int)euler_angles.roll);
+        sd1306_write_string(&disp, str, 0, 0);
+        snprintf(str, sizeof(str), "Pitch:%d", (int)euler_angles.pitch);
+        sd1306_write_string(&disp, str, 0, 23);
+        snprintf(str, sizeof(str), "Yaw:%d", (int)euler_angles.yaw);
+        sd1306_write_string(&disp, str, 0, 46);
+
         ssd1306_send_buffer(&disp);
         usleep(100000); // sleep for 100ms
     }

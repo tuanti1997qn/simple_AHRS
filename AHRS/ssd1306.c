@@ -18,6 +18,8 @@
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <fcntl.h>
+#include "stdio.h"
+#include "font.h"
 
 // real-time features
 #include <sys/mman.h>
@@ -165,4 +167,34 @@ void ssd1306_writeLine(struct display_info* disp , int16_t x0, int16_t y0, int16
   }
 }
 
+void sd1306_write_char(struct display_info *disp, char c, int x, int y) {
+	int i, j;
+	int offset = 0;
+	int width = 11;
+	int height = 18;
+	uint32_t b = 0;
+	const uint8_t *bitmap = NULL;
 
+	if (c < 0x20 || c > 0x7F) {
+		return; // Invalid character
+	}
+
+	offset = c - 0x20; // Offset for ASCII characters
+	
+    for(i = 0; i < height; i++) {
+        b = Font11x18[(c - 32) * height + i];
+        for(j = 0; j < width; j++) {
+            if((b << j) & 0x8000)  {
+                writePixel(disp, (x + j), (y + i));
+            }
+        }
+    }
+}
+
+void sd1306_write_string(struct display_info *disp, const char *str, int x, int y) {
+	while (*str) {
+		sd1306_write_char(disp, *str, x, y);
+		x += 11; // Move to the next character position
+		str++;
+	}
+}

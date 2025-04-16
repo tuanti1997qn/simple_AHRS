@@ -125,4 +125,5 @@ extern int ssd1306_send        (struct display_info* disp, struct sized_array* p
 extern int ssd1306_init        (struct display_info* disp);
 extern int ssd1306_send_buffer (struct display_info* disp);
 extern void ssd1306_writeLine  (struct display_info* disp , int16_t x0, int16_t y0, int16_t x1, int16_t y1);
+extern void sd1306_write_string(struct display_info *disp, const char *str, int x, int y);
 #endif // SSD1306_H
