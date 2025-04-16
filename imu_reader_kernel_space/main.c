@@ -49,19 +49,6 @@ struct imu_raw_data {
 };
 
 
-// static int I2C_Write(unsigned char *buf, unsigned int len)
-// {
-//     int ret = i2c_master_send(i2c_client, buf, len);
-    
-//     return ret;
-// }
-// static int I2C_Read(unsigned char *out_buf, unsigned int len)
-// {
-//     int ret = i2c_master_recv(i2c_client, out_buf, len);
-    
-//     return ret;
-// }
-
 static int I2C_write(unsigned char reg_addr, unsigned char data)
 {
     int ret;
@@ -157,12 +144,6 @@ int imu_reader_release(struct inode *inode, struct file *filp)
 }
 ssize_t imu_reader_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 {
-    // if (*f_pos >0) {
-    //     PDEBUG("End of file reached\n");
-    //     return 0;
-    // }
-
-    PDEBUG("Reading from IMU reader device\n");
     // read accel and gyro from mpu6050
     unsigned char data[6];
     // mutex lock
@@ -192,18 +173,6 @@ ssize_t imu_reader_read(struct file *filp, char __user *buf, size_t count, loff_
     gyro_x = (data[0] << 8) | data[1];
     gyro_y = (data[2] << 8) | data[3];
     gyro_z = (data[4] << 8) | data[5];
-    // // copy to user space format string x,y,z + EOL
-    // char buf_kernel[100];
-    // snprintf(buf_kernel, sizeof(buf_kernel), "acc_x: %d, acc_y: %d, acc_z: %d, gyro_x: %d, gyro_y: %d, gyro_z: %d\n", acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z);
-    // copy to user space
-    // if (copy_to_user(buf, buf_kernel, strlen(buf_kernel))) {
-    //     PDEBUG("Failed to copy to user space\n");
-    //     return -EFAULT;
-    // }
-    // // update file position
-    // *f_pos += strlen(buf_kernel);
-    // // return number of bytes read
-    // return strlen(buf_kernel);
 
     // copy to user space raw data
     struct imu_raw_data raw_data = {

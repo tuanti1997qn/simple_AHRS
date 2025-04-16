@@ -6,6 +6,8 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <math.h>
+#include <errno.h>
+#include <signal.h>
 #include "madgwickFilter.h"
 #include "AHRS.h"
 #include "ssd1306.h"
@@ -52,6 +54,8 @@ struct euler_data euler_angles = {
 };
 
 #define degree_to_radian(x) ((x) * 0.01745329251f)
+
+uint8_t program_terminated = 0;
 
 void imu_thread(void *arg)
 {
@@ -148,6 +152,13 @@ void oled_display_thread(void *arg)
     }
 }
 
+void sigint_handler(int sig)
+{
+    syslog(LOG_INFO, "Caught signal %d\n", sig);
+    program_terminated = 1;
+    syslog(LOG_INFO, "Program terminated\n");
+    exit(0);
+}
 
 
 int main(int argc, char *argv[])
@@ -155,7 +166,26 @@ int main(int argc, char *argv[])
     int ret;
 
     openlog("AHRS", LOG_PID | LOG_PERROR, LOG_USER);
-    
+
+    struct sigaction sa;
+    sa.sa_handler = sigint_handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);
+
+
+    if (argc >= 2 && strcmp(argv[1], "-d") == 0)
+    {
+        syslog(LOG_INFO, "Daemonizing the server\n");
+        ret = daemon(0, 0);
+        if(ret == -1)
+        {
+            syslog(LOG_ERR, "daemon error code %d\n", errno);
+            return -1;
+        }
+    }
+ 
     pthread_t imu_thread_id;
     ret = pthread_create(&imu_thread_id, NULL, (void *)imu_thread, NULL);
     if (ret != 0) {
@@ -166,6 +196,15 @@ int main(int argc, char *argv[])
     pthread_t oled_thread_id;
     ret = pthread_create(&oled_thread_id, NULL, (void *)oled_display_thread, NULL);
 
-    while(1);
+    while(!program_terminated) {
+        // Main thread can do other work here if needed
+        usleep(100000); // sleep for 100ms
+    }
+
+    pthread_cancel(imu_thread_id);
+    pthread_cancel(oled_thread_id);
+    pthread_join(imu_thread_id, NULL);
+    pthread_join(oled_thread_id, NULL);
+    syslog(LOG_INFO, "Program terminated\n");
     return 0;
 }
